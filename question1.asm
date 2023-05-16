@@ -1,31 +1,74 @@
+.text# MILA
+    la $a0, array_base # Setting Array Base
+    lw $a1, array_size  # Setting Array size
+    jal PrintIntArrayR # Calling the fucntion that outputs the array in reverse
+    jal Exit # BYE
+.data # Settintg up the array 
+    array_size: .word 5
+    array_base: # inputting the array info
+            .word 2
+            .word 27
+            .word 11
+            .word 511
+            .word 1
+
+.data 
+
+.include "utils.asm"
+# Subprogram: PrintIntArray
+# Purpose: print an array of ints
+# inputs: $a0 - the base address of the array
+#         $a1 - the size of the array
+#
 .text
-RandAllocateArray:
- addi $sp, $sp, -4 # making some same on the stack
- sw $ra, 0($sp)
- 
- mul $a0, $a1, 4 # allocates 4 bits for each element
- li $v0, 9 # array stored in v0
- syscall
- move $s0, $v0 # store base of array in s0
- move $s1, $zero # store 0 in s1
- move $s2, $a1 # store array size in s2
- cycle:
-  sge $s3, $s1, $s2 # s3 is set to 1 once s1 (iterator) equals s2 (array size)
-  bnez $s3, fin # if s3 equals 1, end loop
-  sll $t0, $s1, 2 # multiply iterator by 4 to account for memory
-  add $t0, $t0, $s0 # add result to base of array to access element location
+PrintIntArrayR:
 
-  li $v0, 42 # generate random number
-  la $a0, 1 # Lower bound is 1
-  li $a1, 50 # Upper bound is 50
-  syscall
-  move $t1, $a0 # Random number stored in $t1
+    addi $sp, $sp, -16        # Stack record
+    sw $ra, 0($sp)
+    sw $s0, 4($sp)
+    sw $s1, 8($sp)
+    sw $s2, 12($sp)
 
-  sw $t1, 0($t0) # store random number in the array
-  addi $s1, $s1, 1 # iterate s1
- b cycle
- fin:
- 
- lw $ra, 0($sp)
- addi $sp, $sp, 4
- jr $ra
+    move $s0, $a0 # save the base of the array to $s0
+
+ # initialization for counter loop
+ # $s1 is the ending index of the loop
+ # $s2 is the loop counter
+ move $s1, $zero
+ move $s2, $a1
+ la $a0 open_bracket # print open bracket
+ jal PrintString
+loop:
+ # check ending condition
+ sle $t0, $s2, $s1
+ bnez $t0, end_loop
+
+ sll $t0, $s2, 2 # Multiply the loop counter by
+ # by 4 to get offset (each element
+ # is 4 big).
+ add $t0, $t0, $s0 # address of next array element
+ lw $a0, -4($t0) # Next array element
+ jal PrintInt # print the integer from array
+ la $a0, comma
+ jal PrintString
+
+ addi $s2, $s2, -1 #increment $s0
+ b loop 
+end_loop:
+
+    li $v0, 4            # print close bracket
+    la $a0, close_bracket
+    syscall 
+
+
+    lw $ra, 0($sp) 
+    lw $s0, 4($sp)
+    lw $s1, 8($sp)
+    lw $s2, 12($sp)        # restore stack and return
+    addi $sp, $sp, 16
+    jr $ra 
+
+.data
+    open_bracket:     .asciiz "["
+    close_bracket:     .asciiz "]"
+    comma:         .asciiz ","
